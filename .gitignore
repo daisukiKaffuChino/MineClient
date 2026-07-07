@@ -1,5 +1,7 @@
 # Gradle files
 .gradle/
+.gradle-user-home
+.gradle-local
 build/
 
 # Local configuration file (sdk path, etc)
@@ -12,9 +14,9 @@ local.properties
 captures/
 .externalNativeBuild/
 .cxx/
-*.aab
 *.apk
-output-metadata.json
+output.json
+app/release
 
 # IntelliJ
 *.iml
@@ -32,3 +34,8 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# macOS
+.DS_Store
+
+.kotlin
