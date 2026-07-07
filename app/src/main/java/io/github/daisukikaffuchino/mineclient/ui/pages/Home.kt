@@ -3,6 +3,8 @@ package io.github.daisukikaffuchino.mineclient.ui.pages
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -124,18 +127,22 @@ private fun ServerListItem(
     onClick: () -> Unit,
     onEditClick: () -> Unit = {},
 ) {
-    Box {
-        val context = LocalContext.current
-        val interactionSource = remember { MutableInteractionSource() }
-        var showMenu by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val interactionSource = remember { MutableInteractionSource() }
+    var showMenu by remember { mutableStateOf(false) }
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(animatedShape(shapes, interactionSource))
+            .indication(interactionSource, LocalIndication.current)
+            .combinedClickable(
+                interactionSource = interactionSource,
+                onClick = onClick,
+                onLongClick = { showMenu = true },
+            ),
+    ) {
         Surface(
-            modifier = modifier
-                .fillMaxWidth()
-                .combinedClickable(
-                    interactionSource = interactionSource,
-                    onClick = onClick,
-                    onLongClick = { showMenu = true },
-                ),
+            modifier = Modifier.fillMaxWidth(),
             shape = animatedShape(shapes, interactionSource),
             color = background,
         ) {
