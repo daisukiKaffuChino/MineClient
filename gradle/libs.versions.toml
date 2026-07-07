@@ -12,6 +12,7 @@ kotlin = "2.4.0"
 composeBom = "2026.06.01"
 navigation3Runtime = "1.1.4"
 material3 = "1.5.0-alpha23"
+m3color = "2026.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -32,6 +33,7 @@ androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-te
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-navigation3-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation3Runtime" }
 androidx-compose-material3-adaptive-navigation-suite = { group = "androidx.compose.material3", name = "material3-adaptive-navigation-suite" }
+kyant-m3color = { group = "com.github.Kyant0", name = "m3color", version.ref = "m3color" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

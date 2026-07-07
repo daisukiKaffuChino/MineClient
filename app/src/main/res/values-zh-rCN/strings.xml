@@ -4,6 +4,9 @@
     <string name="nav_home">主页</string>
     <string name="nav_settings">设置</string>
     <string name="settings_connection">连接</string>
+    <string name="settings_appearance">外观</string>
+    <string name="settings_dynamic_colors_title">动态取色</string>
+    <string name="settings_dynamic_colors_desc">在 Android 12 及更高版本上使用 Material You 动态取色。</string>
     <string name="settings_auto_refresh_title">自动刷新服务器列表</string>
     <string name="settings_auto_refresh_desc">仅停留在主页时，每 30 秒自动刷新一次服务器状态。</string>
     <string name="settings_legacy_protocol_title">协议版本回退</string>
@@ -11,8 +14,13 @@
     <string name="settings_max_concurrent_title">最大并发数限制</string>
     <string name="settings_max_concurrent_desc">同时刷新服务器的最大数量。</string>
     <string name="settings_about">关于</string>
-    <string name="settings_version_title">软件版本号</string>
+    <string name="settings_version_title">应用版本</string>
     <string name="settings_open_source_title">开放源代码</string>
+    <string name="settings_dns_query_title">查询系统 DNS</string>
+    <string name="settings_dns_query_desc">需要 Android 11 及更高版本。</string>
+    <string name="dns_dialog_title">系统 DNS 服务器</string>
+    <string name="dns_dialog_empty">无法获取 DNS 服务器地址</string>
+    <string name="action_ok">确定</string>
     <string name="empty_title">还没有服务器</string>
     <string name="empty_desc">点击右下角按钮添加服务器，列表会自动每 30 秒刷新状态。</string>
     <string name="add_server">添加服务器</string>

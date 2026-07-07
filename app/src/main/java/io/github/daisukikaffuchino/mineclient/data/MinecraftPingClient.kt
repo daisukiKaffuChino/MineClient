@@ -2,12 +2,14 @@
 
 import android.net.DnsResolver
 import android.os.Build
-import androidx.annotation.RequiresApi
+import android.os.Looper
+import android.os.ext.SdkExtensions
+import io.github.daisukikaffuchino.mineclient.MineApplication
+import io.github.daisukikaffuchino.mineclient.ui.ServerEdition
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import io.github.daisukikaffuchino.mineclient.ui.ServerEdition
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
@@ -16,9 +18,9 @@ import java.net.DatagramSocket
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.nio.charset.StandardCharsets
-import kotlin.math.roundToInt
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.math.roundToInt
 import kotlin.random.Random
 
 private const val DefaultMinecraftPort = 25565
@@ -57,6 +59,7 @@ class MinecraftPingClient {
                     val address = resolveAddress(input)
                     queryJavaServerWithFallback(address, enableLegacyProtocolFallback)
                 }
+
                 ServerEdition.Bedrock -> {
                     val address = resolveBedrockAddress(input)
                     queryBedrockServer(address)
@@ -76,6 +79,7 @@ class MinecraftPingClient {
                 val port = trimmed.substringAfter(':').trim().toIntOrNull() ?: DefaultMinecraftPort
                 ServerAddress(host, port)
             }
+
             else -> ServerAddress(trimmed, DefaultMinecraftPort)
         }
 
@@ -99,12 +103,14 @@ class MinecraftPingClient {
                 val port = trimmed.substringAfter(':').trim().toIntOrNull() ?: 19132
                 ServerAddress(host, port)
             }
+
             else -> ServerAddress(trimmed, 19132)
         }
         require(parsed.host.isNotBlank()) { "Server address is required" }
         require(parsed.port in 1..65535) { "Port must be between 1 and 65535" }
         return parsed
     }
+
     private fun parseIpv6Address(value: String): ServerAddress {
         val endIndex = value.indexOf(']')
         require(endIndex > 1) { "Invalid IPv6 address" }
@@ -127,7 +133,10 @@ class MinecraftPingClient {
     ): ServerStatus {
         return runCatching { queryJavaServer(address, CurrentStatusProtocol) }
             .recoverCatching { error ->
-                if (enableLegacyProtocolFallback) queryJavaServer(address, LegacyStatusProtocol) else throw error
+                if (enableLegacyProtocolFallback) queryJavaServer(
+                    address,
+                    LegacyStatusProtocol
+                ) else throw error
             }
             .getOrThrow()
     }
@@ -195,33 +204,45 @@ class MinecraftPingClient {
         return output.toByteArray()
     }
 
-    private fun parseBedrockStatus(payload: ByteArray, address: ServerAddress, latencyMillis: Long): ServerStatus {
+    private fun parseBedrockStatus(
+        payload: ByteArray,
+        address: ServerAddress,
+        latencyMillis: Long
+    ): ServerStatus {
         require(payload.isNotEmpty() && payload[0] == 0x1c.toByte()) { "Invalid server response" }
         var offset = 1 + 8 + 8 + 16
         require(payload.size >= offset + 2) { "Empty server response" }
-        val length = ((payload[offset].toInt() and 0xFF) shl 8) or (payload[offset + 1].toInt() and 0xFF)
+        val length =
+            ((payload[offset].toInt() and 0xFF) shl 8) or (payload[offset + 1].toInt() and 0xFF)
         offset += 2
         require(payload.size >= offset + length) { "Incomplete server response" }
         val parts = String(payload, offset, length, StandardCharsets.UTF_8).split(';')
         return ServerStatus(
             address = address,
             latencyMillis = latencyMillis,
-            protocolName = parseMinecraftLegacyText(parts.getOrNull(3).orEmpty().ifBlank { "Unknown version" }),
+            protocolName = parseMinecraftLegacyText(
+                parts.getOrNull(3).orEmpty().ifBlank { "Unknown version" }),
             protocolVersion = parts.getOrNull(2)?.toIntOrNull() ?: -1,
             onlinePlayers = parts.getOrNull(4)?.toIntOrNull() ?: 0,
             maxPlayers = parts.getOrNull(5)?.toIntOrNull() ?: 0,
-            motd = parseMinecraftLegacyText(parts.getOrNull(1).orEmpty().ifBlank { "Bedrock Server" }),
+            motd = parseMinecraftLegacyText(
+                parts.getOrNull(1).orEmpty().ifBlank { "Bedrock Server" }),
             samplePlayers = emptyList(),
             faviconBase64 = null,
         )
     }
+
     private fun sendPacket(output: DataOutputStream, payload: ByteArray) {
         output.writeVarInt(payload.size)
         output.write(payload)
         output.flush()
     }
 
-    private fun parseStatus(json: String, address: ServerAddress, latencyMillis: Long): ServerStatus {
+    private fun parseStatus(
+        json: String,
+        address: ServerAddress,
+        latencyMillis: Long
+    ): ServerStatus {
         val root = JsonParser(json).parseObject()
         val version = root.objectValue("version")
         val players = root.objectValue("players")
@@ -234,7 +255,9 @@ class MinecraftPingClient {
         return ServerStatus(
             address = address,
             latencyMillis = latencyMillis,
-            protocolName = version?.get("name")?.toMinecraftText()?.ifBlankText { MinecraftText("Unknown version") } ?: MinecraftText("Unknown version"),
+            protocolName = version?.get("name")?.toMinecraftText()
+                ?.ifBlankText { MinecraftText("Unknown version") }
+                ?: MinecraftText("Unknown version"),
             protocolVersion = version?.numberValue("protocol")?.toInt() ?: -1,
             onlinePlayers = players?.numberValue("online")?.toInt() ?: 0,
             maxPlayers = players?.numberValue("max")?.toInt() ?: 0,
@@ -244,41 +267,73 @@ class MinecraftPingClient {
         )
     }
 
-    private fun isIpLiteral(host: String): Boolean = host.all { it.isDigit() || it == '.' } || host.contains(':')
+    private fun isIpLiteral(host: String): Boolean =
+        host.all { it.isDigit() || it == '.' } || host.contains(':')
 }
 
+@Suppress("DEPRECATION")
 private class DnsSrvResolver {
     suspend fun resolve(name: String): ServerAddress? {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            runCatching { resolveWithPlatformDns(name) }.getOrNull()?.let { return it }
-        }
+        runCatching { resolveWithPlatformDns(name) }.getOrNull()?.let { return it }
         return resolveWithTcpDns(name)
     }
 
-    @RequiresApi(Build.VERSION_CODES.Q)
-    private suspend fun resolveWithPlatformDns(name: String): ServerAddress? = suspendCancellableCoroutine { continuation ->
-        DnsResolver.getInstance().rawQuery(
-            null,
-            name,
-            1,
-            33,
-            DnsResolver.FLAG_EMPTY,
-            Dispatchers.IO.asExecutor(),
-            null,
-            object : DnsResolver.Callback<ByteArray> {
-                override fun onAnswer(answer: ByteArray, rcode: Int) {
-                    if (rcode == 0) {
-                        continuation.resume(runCatching { parseResponse(answer) }.getOrNull())
-                    } else {
-                        continuation.resume(null)
-                    }
-                }
+    private suspend fun resolveWithPlatformDns(
+        name: String
+    ): ServerAddress? = suspendCancellableCoroutine { continuation ->
 
-                override fun onError(error: DnsResolver.DnsException) {
-                    continuation.resumeWithException(error)
-                }
-            },
-        )
+        if (SdkExtensions.getExtensionVersion(Build.VERSION_CODES.S) >= 22) {
+            DnsResolver(
+                MineApplication.context,
+                Looper.getMainLooper()
+            ).rawQuery(
+                null,
+                name,
+                DnsResolver.CLASS_IN,
+                DnsResolver.TYPE_AAAA,
+                DnsResolver.FLAG_EMPTY,
+                Dispatchers.IO.asExecutor(),
+                null,
+                object : DnsResolver.Callback<ByteArray> {
+                    override fun onAnswer(answer: ByteArray, rcode: Int) {
+                        if (rcode == 0) {
+                            continuation.resume(
+                                runCatching { parseResponse(answer) }.getOrNull()
+                            )
+                        } else {
+                            continuation.resume(null)
+                        }
+                    }
+
+                    override fun onError(error: DnsResolver.DnsException) {
+                        continuation.resumeWithException(error)
+                    }
+                },
+            )
+        } else {
+            DnsResolver.getInstance().rawQuery(
+                null,
+                name,
+                DnsResolver.CLASS_IN,
+                DnsResolver.TYPE_A,
+                DnsResolver.FLAG_EMPTY,
+                Dispatchers.IO.asExecutor(),
+                null,
+                object : DnsResolver.Callback<ByteArray> {
+                    override fun onAnswer(answer: ByteArray, rcode: Int) {
+                        if (rcode == 0) {
+                            continuation.resume(runCatching { parseResponse(answer) }.getOrNull())
+                        } else {
+                            continuation.resume(null)
+                        }
+                    }
+
+                    override fun onError(error: DnsResolver.DnsException) {
+                        continuation.resumeWithException(error)
+                    }
+                },
+            )
+        }
     }
 
     private fun resolveWithTcpDns(name: String): ServerAddress? {
@@ -362,6 +417,7 @@ private class DnsSrvResolver {
                     if (consumedOffset == -1) consumedOffset = offset + 1
                     offset = pointer
                 }
+
                 else -> {
                     labels += String(bytes, offset, length, StandardCharsets.UTF_8)
                     offset += length
@@ -441,11 +497,6 @@ private fun ByteArray.readUnsignedShort(offset: Int): Int =
 
 private inline fun MinecraftText.ifBlankText(defaultValue: () -> MinecraftText): MinecraftText =
     if (plainText.isBlank()) defaultValue() else this
-
-
-
-
-
 
 
 private fun ByteArrayOutputStream.writeLong(value: Long) {

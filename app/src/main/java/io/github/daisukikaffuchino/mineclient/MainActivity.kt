@@ -36,6 +36,7 @@ import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -109,8 +110,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MineClientTheme {
-                val state by viewModel.state.collectAsState()
+            val state by viewModel.state.collectAsState()
+            MineClientTheme(dynamicColor = state.settings.enableDynamicColors) {
                 ServerStatusApp(
                     state = state,
                     onAddClick = viewModel::openAddDialog,
@@ -126,6 +127,7 @@ class MainActivity : ComponentActivity() {
                     onWelcomeDone = viewModel::completeWelcome,
                     onAutoRefreshServersChange = viewModel::updateAutoRefreshServers,
                     onLegacyProtocolFallbackChange = viewModel::updateLegacyProtocolFallback,
+                    onDynamicColorsChange = viewModel::updateDynamicColorsEnabled,
                     onMaxConcurrentRequestsChange = viewModel::updateMaxConcurrentRequests,
                     onDismissDetails = viewModel::clearSelectedServer,
                 )
@@ -133,7 +135,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
 
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
@@ -153,6 +154,7 @@ fun ServerStatusApp(
     onWelcomeDone: () -> Unit,
     onAutoRefreshServersChange: (Boolean) -> Unit,
     onLegacyProtocolFallbackChange: (Boolean) -> Unit,
+    onDynamicColorsChange: (Boolean) -> Unit,
     onMaxConcurrentRequestsChange: (Int) -> Unit,
     onDismissDetails: () -> Unit,
     modifier: Modifier = Modifier,
@@ -230,12 +232,12 @@ fun ServerStatusApp(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             topBar = {
                 TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
+                    title = { Text(stringResource(R.string.app_name)) },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     )
-            )
-                     },
+                )
+            },
             floatingActionButton = {
                 AnimatedVisibility(
                     visible = mainBackStack.topLevelKey == AppScreen.Home,
@@ -245,7 +247,15 @@ fun ServerStatusApp(
                     Box(
                         modifier = Modifier.padding(8.dp)
                     ) {
-                        FloatingActionButton(onClick = onAddClick) {
+                        FloatingActionButton(
+                            onClick = onAddClick,
+                            elevation = FloatingActionButtonDefaults.elevation(
+                                defaultElevation = 4.dp,
+                                pressedElevation = 6.dp,
+                                hoveredElevation = 6.dp,
+                                focusedElevation = 6.dp
+                            )
+                        ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_add),
                                 contentDescription = stringResource(R.string.add_server),
@@ -264,7 +274,6 @@ fun ServerStatusApp(
                 when (destinations[pageIndex].route) {
                     AppScreen.Home -> HomePage(
                         state = state,
-                        onAddClick = onAddClick,
                         onServerClick = onServerClick,
                     )
 
@@ -272,6 +281,7 @@ fun ServerStatusApp(
                         state = state,
                         onAutoRefreshServersChange = onAutoRefreshServersChange,
                         onLegacyProtocolFallbackChange = onLegacyProtocolFallbackChange,
+                        onDynamicColorsChange = onDynamicColorsChange,
                         onMaxConcurrentRequestsChange = onMaxConcurrentRequestsChange,
                     )
                 }
@@ -405,15 +415,11 @@ private fun AddServerDialog(
 }
 
 
-
-
-
 @Composable
 private fun ServerEdition.displayName(): String = when (this) {
     ServerEdition.Java -> stringResource(R.string.edition_java)
     ServerEdition.Bedrock -> stringResource(R.string.edition_bedrock)
 }
-
 
 
 @Composable
@@ -533,7 +539,6 @@ private fun StatusDetails(status: ServerStatus, isRefreshing: Boolean) {
 }
 
 
-
 private fun List<MinecraftText>.joinToAnnotatedString(separator: String): AnnotatedString =
     buildAnnotatedString {
         this@joinToAnnotatedString.forEachIndexed { index, item ->
@@ -629,6 +634,7 @@ fun ServerStatusPreview() {
             onWelcomeDone = {},
             onAutoRefreshServersChange = {},
             onLegacyProtocolFallbackChange = {},
+            onDynamicColorsChange = {},
             onMaxConcurrentRequestsChange = {},
             onDismissDetails = {},
         )

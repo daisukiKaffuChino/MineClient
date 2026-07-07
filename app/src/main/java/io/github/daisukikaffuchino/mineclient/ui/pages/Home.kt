@@ -1,6 +1,5 @@
 package io.github.daisukikaffuchino.mineclient.ui.pages
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,9 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonShapes
-import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -45,13 +42,11 @@ import io.github.daisukikaffuchino.mineclient.utils.ShapeUtil.animatedShape
 @Composable
 fun HomePage(
     state: ServerStatusUiState,
-    onAddClick: () -> Unit,
     onServerClick: (Long) -> Unit,
 ) {
     if (state.servers.isEmpty()) {
         EmptyServerList(
-            modifier = Modifier.fillMaxSize(),
-            onAddClick = onAddClick,
+            modifier = Modifier.fillMaxSize()
         )
     } else {
         LazyColumn(
@@ -71,7 +66,7 @@ fun HomePage(
 }
 
 @Composable
-private fun EmptyServerList(modifier: Modifier = Modifier, onAddClick: () -> Unit) {
+private fun EmptyServerList(modifier: Modifier = Modifier) {
     Box(modifier = modifier.padding(24.dp), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,

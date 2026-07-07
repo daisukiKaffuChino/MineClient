@@ -54,7 +54,7 @@ private class MinecraftTextBuilder {
     private var style = MinecraftTextStyle()
     private var spanStart = 0
 
-    val length: Int get() = text.length
+    //val length: Int get() = text.length
 
     fun append(input: String) {
         input.forEach { append(it) }

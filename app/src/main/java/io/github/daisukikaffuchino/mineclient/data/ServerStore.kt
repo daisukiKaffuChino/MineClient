@@ -18,12 +18,14 @@ private val SavedServersKey = stringPreferencesKey("saved_servers_json")
 private val LegacyProtocolFallbackKey = booleanPreferencesKey("legacy_protocol_fallback")
 private val MaxConcurrentRequestsKey = stringPreferencesKey("max_concurrent_requests")
 private val AutoRefreshServersKey = booleanPreferencesKey("auto_refresh_servers")
+private val DynamicColorsEnabledKey = booleanPreferencesKey("dynamic_colors_enabled")
 private val HasSeenWelcomeKey = booleanPreferencesKey("has_seen_welcome")
 
 data class AppSettings(
     val enableLegacyProtocolFallback: Boolean = false,
     val maxConcurrentRequests: Int = 4,
     val autoRefreshServers: Boolean = true,
+    val enableDynamicColors: Boolean = false,
     val hasSeenWelcome: Boolean = false,
 )
 
@@ -54,6 +56,7 @@ class ServerStore(context: Context) {
                     ?.toIntOrNull()
                     ?.coerceIn(1, 16) ?: 4,
                 autoRefreshServers = preferences[AutoRefreshServersKey] ?: true,
+                enableDynamicColors = preferences[DynamicColorsEnabledKey] ?: false,
                 hasSeenWelcome = preferences[HasSeenWelcomeKey] ?: false,
             )
         }
@@ -63,6 +66,7 @@ class ServerStore(context: Context) {
             preferences[LegacyProtocolFallbackKey] = settings.enableLegacyProtocolFallback
             preferences[MaxConcurrentRequestsKey] = settings.maxConcurrentRequests.toString()
             preferences[AutoRefreshServersKey] = settings.autoRefreshServers
+            preferences[DynamicColorsEnabledKey] = settings.enableDynamicColors
             preferences[HasSeenWelcomeKey] = settings.hasSeenWelcome
         }
     }
@@ -130,5 +134,3 @@ private fun String.escapeJson(): String = buildString {
         }
     }
 }
-
-

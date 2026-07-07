@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val DefaultJavaPort = 25565
 private const val DefaultBedrockPort = 19132
@@ -73,7 +74,7 @@ class ServerStatusViewModel(
         }
         viewModelScope.launch {
             while (true) {
-                delay(AutoRefreshIntervalMillis)
+                delay(AutoRefreshIntervalMillis.milliseconds)
                 if (mutableState.value.selectedPage == AppPage.Home && mutableState.value.settings.autoRefreshServers) {
                     refreshAllServers()
                 }
@@ -87,6 +88,11 @@ class ServerStatusViewModel(
 
     fun updateAutoRefreshServers(enabled: Boolean) {
         mutableState.update { it.copy(settings = it.settings.copy(autoRefreshServers = enabled)) }
+        persistSettings()
+    }
+
+    fun updateDynamicColorsEnabled(enabled: Boolean) {
+        mutableState.update { it.copy(settings = it.settings.copy(enableDynamicColors = enabled)) }
         persistSettings()
     }
 
@@ -260,8 +266,6 @@ fun ServerEntry.queryAddress(): String {
     }
     return if (port == null || port == defaultPort) address else "$address:$port"
 }
-
-
 
 
 

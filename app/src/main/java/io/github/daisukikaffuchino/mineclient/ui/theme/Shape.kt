@@ -3,8 +3,6 @@ package io.github.daisukikaffuchino.mineclient.ui.theme
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.FiniteAnimationSpec
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,7 +23,6 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
-import io.github.daisukikaffuchino.mineclient.utils.ShapeUtil
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -288,13 +285,3 @@ internal interface ShapeWithHorizontalCenterOptically : Shape {
 }
 
 internal const val CenterOpticallyCoefficient = 0.11f
-
-@Composable
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-fun animatedShape(shapes: ButtonShapes, interactionSource: MutableInteractionSource?): Shape {
-    val userInteractionSource = interactionSource ?: remember { MutableInteractionSource() }
-    val pressed by userInteractionSource.collectIsPressedAsState()
-    val animatedShape =
-        shapeByInteraction(shapes, pressed, ShapeUtil.shapesDefaultAnimationSpec)
-    return animatedShape
-}
