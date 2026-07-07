@@ -27,7 +27,7 @@
     <string name="server_type">服务器类型</string>
     <string name="edition_java">Java</string>
     <string name="edition_bedrock">Bedrock</string>
-    <string name="server_name_required">名字 *</string>
+    <string name="server_name_required">名称 *</string>
     <string name="server_address_required">服务器地址 *</string>
     <string name="server_address_java_hint">例如 mc.hypixel.net</string>
     <string name="server_address_bedrock_hint">例如 play.example.com</string>

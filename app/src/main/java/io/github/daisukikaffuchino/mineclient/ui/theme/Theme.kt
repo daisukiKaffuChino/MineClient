@@ -24,7 +24,7 @@ fun MineClientTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     contrastLevel: Double = 0.0,
     dynamicColor: Boolean = false,
-    specVersion: ColorSpec.SpecVersion = ColorSpec.SpecVersion.SPEC_2021,
+    specVersion: ColorSpec.SpecVersion = ColorSpec.SpecVersion.SPEC_2026,
     content: @Composable () -> Unit
 ) {
     val baseColor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && dynamicColor) {
