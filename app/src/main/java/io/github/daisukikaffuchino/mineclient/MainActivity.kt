@@ -1,4 +1,4 @@
-﻿package io.github.daisukikaffuchino.mineclient
+package io.github.daisukikaffuchino.mineclient
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -167,136 +167,140 @@ fun ServerStatusApp(
         return
     }
 
-    if (!state.settings.hasSeenWelcome) {
-        WelcomePage(onStartClick = onWelcomeDone, modifier = modifier)
-        return
-    }
+        val destinations = AppDestination.entries
+        val mainBackStack = remember { TopLevelBackStack<AppScreen>(AppScreen.Home) }
+        val pagerState = rememberPagerState(
+            initialPage = destinations.indexOfFirst { it.route == mainBackStack.topLevelKey }
+                .coerceAtLeast(0),
+            pageCount = { destinations.size },
+        )
+        val homeListState = rememberLazyListState()
+        val selectedServer = state.servers.firstOrNull { it.id == state.selectedServerId }
 
-    val destinations = AppDestination.entries
-    val mainBackStack = remember { TopLevelBackStack<AppScreen>(AppScreen.Home) }
-    val pagerState = rememberPagerState(
-        initialPage = destinations.indexOfFirst { it.route == mainBackStack.topLevelKey }
-            .coerceAtLeast(0),
-        pageCount = { destinations.size },
-    )
-    val homeListState = rememberLazyListState()
-    val selectedServer = state.servers.firstOrNull { it.id == state.selectedServerId }
-
-    BackHandler(enabled = mainBackStack.topLevelKey != AppScreen.Home) {
-        mainBackStack.removeLast()
-        onPageSelected(mainBackStack.topLevelKey.toAppPage())
-    }
-
-    LaunchedEffect(state.selectedPage) {
-        val targetScreen = state.selectedPage.toMomoScreen()
-        if (mainBackStack.topLevelKey != targetScreen) {
-            mainBackStack.addTopLevel(targetScreen)
+        BackHandler(enabled = mainBackStack.topLevelKey != AppScreen.Home) {
+            mainBackStack.removeLast()
+            onPageSelected(mainBackStack.topLevelKey.toAppPage())
         }
-    }
-    LaunchedEffect(mainBackStack.topLevelKey) {
-        val targetPage = destinations.indexOfFirst { it.route == mainBackStack.topLevelKey }
-        if (targetPage >= 0 && pagerState.currentPage != targetPage) {
-            pagerState.animateScrollToPage(targetPage)
-        }
-        onPageSelected(mainBackStack.topLevelKey.toAppPage())
-    }
-    LaunchedEffect(pagerState.currentPage) {
-        val destination = destinations.getOrNull(pagerState.currentPage) ?: return@LaunchedEffect
-        if (mainBackStack.topLevelKey != destination.route) {
-            mainBackStack.addTopLevel(destination.route)
-        }
-    }
 
-    NavigationSuiteScaffold(
-        navigationSuiteItems = {
-            destinations.forEach { destination ->
-                val selected = destination.route == mainBackStack.topLevelKey
-                item(
-                    icon = {
-                        Crossfade(selected, label = "navigationIcon") { isSelected ->
-                            Icon(
-                                painter = painterResource(if (isSelected) destination.selectedIcon else destination.icon),
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                    label = { Text(stringResource(destination.label)) },
-                    selected = selected,
-                    onClick = {
-                        mainBackStack.addTopLevel(destination.route)
-                        onPageSelected(destination.route.toAppPage())
-                    },
-                )
+        LaunchedEffect(state.selectedPage) {
+            val targetScreen = state.selectedPage.toMomoScreen()
+            if (mainBackStack.topLevelKey != targetScreen) {
+                mainBackStack.addTopLevel(targetScreen)
             }
-        },
-        modifier = modifier.fillMaxSize(),
-    ) {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            topBar = {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.app_name)) },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        }
+        LaunchedEffect(mainBackStack.topLevelKey) {
+            val targetPage = destinations.indexOfFirst { it.route == mainBackStack.topLevelKey }
+            if (targetPage >= 0 && pagerState.currentPage != targetPage) {
+                pagerState.animateScrollToPage(targetPage)
+            }
+            onPageSelected(mainBackStack.topLevelKey.toAppPage())
+        }
+        LaunchedEffect(pagerState.currentPage) {
+            val destination = destinations.getOrNull(pagerState.currentPage) ?: return@LaunchedEffect
+            if (mainBackStack.topLevelKey != destination.route) {
+                mainBackStack.addTopLevel(destination.route)
+            }
+        }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        NavigationSuiteScaffold(
+            navigationSuiteItems = {
+                destinations.forEach { destination ->
+                    val selected = destination.route == mainBackStack.topLevelKey
+                    item(
+                        icon = {
+                            Crossfade(selected, label = "navigationIcon") { isSelected ->
+                                Icon(
+                                    painter = painterResource(if (isSelected) destination.selectedIcon else destination.icon),
+                                    contentDescription = null,
+                                )
+                            }
+                        },
+                        label = { Text(stringResource(destination.label)) },
+                        selected = selected,
+                        onClick = {
+                            mainBackStack.addTopLevel(destination.route)
+                            onPageSelected(destination.route.toAppPage())
+                        },
                     )
-                )
+                }
             },
-            floatingActionButton = {
-                AnimatedVisibility(
-                    visible = mainBackStack.topLevelKey == AppScreen.Home && !homeListState.isScrollInProgress,
-                    enter = fadeIn() + scaleIn(initialScale = 0.8f),
-                    exit = fadeOut() + scaleOut(targetScale = 0.8f),
-                ) {
-                    Box(
-                        modifier = Modifier.padding(8.dp)
+            modifier = modifier.fillMaxSize(),
+        ) {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                topBar = {
+                    TopAppBar(
+                        title = { Text(stringResource(R.string.app_name)) },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        )
+                    )
+                },
+                floatingActionButton = {
+                    AnimatedVisibility(
+                        visible = mainBackStack.topLevelKey == AppScreen.Home && !homeListState.isScrollInProgress,
+                        enter = fadeIn() + scaleIn(initialScale = 0.8f),
+                        exit = fadeOut() + scaleOut(targetScale = 0.8f),
                     ) {
-                        FloatingActionButton(
-                            onClick = onAddClick,
-                            elevation = FloatingActionButtonDefaults.elevation(
-                                defaultElevation = 4.dp,
-                                pressedElevation = 6.dp,
-                                hoveredElevation = 6.dp,
-                                focusedElevation = 6.dp
-                            )
+                        Box(
+                            modifier = Modifier.padding(8.dp)
                         ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_add),
-                                contentDescription = stringResource(R.string.add_server),
+                            FloatingActionButton(
+                                onClick = onAddClick,
+                                elevation = FloatingActionButtonDefaults.elevation(
+                                    defaultElevation = 4.dp,
+                                    pressedElevation = 6.dp,
+                                    hoveredElevation = 6.dp,
+                                    focusedElevation = 6.dp
+                                )
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_add),
+                                    contentDescription = stringResource(R.string.add_server),
+                                )
+                            }
+                        }
+                    }
+                },
+            ) { innerPadding ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalBounce(enabled = enableVerticalBounce)
+                ) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .fillMaxSize(),
+                    ) { pageIndex ->
+                        when (destinations[pageIndex].route) {
+                            AppScreen.Home -> HomePage(
+                                state = state,
+                                listState = homeListState,
+                                onServerClick = onServerClick,
+                            )
+
+                            AppScreen.Settings -> SettingsPage(
+                                state = state,
+                                onAutoRefreshServersChange = onAutoRefreshServersChange,
+                                onLegacyProtocolFallbackChange = onLegacyProtocolFallbackChange,
+                                onDynamicColorsChange = onDynamicColorsChange,
+                                onMaxConcurrentRequestsChange = onMaxConcurrentRequestsChange,
                             )
                         }
                     }
                 }
-            },
-        ) { innerPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalBounce(enabled = enableVerticalBounce)
-            ) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .fillMaxSize(),
-                ) { pageIndex ->
-                    when (destinations[pageIndex].route) {
-                        AppScreen.Home -> HomePage(
-                            state = state,
-                            listState = homeListState,
-                            onServerClick = onServerClick,
-                        )
-
-                        AppScreen.Settings -> SettingsPage(
-                            state = state,
-                            onAutoRefreshServersChange = onAutoRefreshServersChange,
-                            onLegacyProtocolFallbackChange = onLegacyProtocolFallbackChange,
-                            onDynamicColorsChange = onDynamicColorsChange,
-                            onMaxConcurrentRequestsChange = onMaxConcurrentRequestsChange,
-                        )
-                    }
-                }
             }
+        }
+        AnimatedVisibility(
+            visible = !state.settings.hasSeenWelcome,
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            WelcomePage(onStartClick = onWelcomeDone)
         }
     }
     if (state.isAddDialogOpen) {
@@ -618,14 +622,14 @@ fun ServerStatusPreview() {
                         status = ServerStatus(
                             address = ServerAddress("mc.hypixel.net"),
                             latencyMillis = 42,
-                            protocolName = parseMinecraftLegacyText("§e1.8.x-1.21.x"),
+                            protocolName = parseMinecraftLegacyText("��e1.8.x-1.21.x"),
                             protocolVersion = 764,
                             onlinePlayers = 42100,
                             maxPlayers = 100000,
-                            motd = parseMinecraftLegacyText("§bHypixel §eNetwork"),
+                            motd = parseMinecraftLegacyText("��bHypixel ��eNetwork"),
                             samplePlayers = listOf(
-                                parseMinecraftLegacyText("§aSteve"),
-                                parseMinecraftLegacyText("§bAlex")
+                                parseMinecraftLegacyText("��aSteve"),
+                                parseMinecraftLegacyText("��bAlex")
                             ),
                             faviconBase64 = null,
                         ),
@@ -651,31 +655,4 @@ fun ServerStatusPreview() {
         )
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
