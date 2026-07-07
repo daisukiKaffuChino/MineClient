@@ -4,10 +4,10 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
 @Serializable
-sealed class MomoScreen : NavKey {
+sealed class AppScreen : NavKey {
     @Serializable
-    data object Home : MomoScreen()
+    data object Home : AppScreen()
 
     @Serializable
-    data object Settings : MomoScreen()
+    data object Settings : AppScreen()
 }

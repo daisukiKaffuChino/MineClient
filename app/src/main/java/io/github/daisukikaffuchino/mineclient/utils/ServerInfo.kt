@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -115,9 +116,10 @@ fun ServerIcon(faviconBase64: String?) {
                 contentDescription = stringResource(R.string.server_icon_content_desc)
             )
         } else {
-            Box(contentAlignment = Alignment.Center) {
-                Text("MC", fontWeight = FontWeight.Bold)
-            }
+            Image(
+                painter = painterResource(R.drawable.server_default),
+                contentDescription = stringResource(R.string.server_icon_content_desc)
+            )
         }
     }
 }

@@ -1,11 +1,8 @@
 ﻿package io.github.daisukikaffuchino.mineclient
 
-import android.content.Context
-import android.content.Intent
-import android.graphics.BitmapFactory
 import android.os.Bundle
-import android.util.Base64
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
@@ -14,21 +11,15 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -38,6 +29,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -51,10 +43,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -65,28 +57,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import io.github.daisukikaffuchino.mineclient.data.AppSettings
 import io.github.daisukikaffuchino.mineclient.data.MinecraftText
-import io.github.daisukikaffuchino.mineclient.data.MinecraftTextSpan
 import io.github.daisukikaffuchino.mineclient.data.ServerAddress
 import io.github.daisukikaffuchino.mineclient.data.ServerStatus
 import io.github.daisukikaffuchino.mineclient.data.ServerStore
@@ -97,8 +81,8 @@ import io.github.daisukikaffuchino.mineclient.ui.ServerEntry
 import io.github.daisukikaffuchino.mineclient.ui.ServerFormState
 import io.github.daisukikaffuchino.mineclient.ui.ServerStatusUiState
 import io.github.daisukikaffuchino.mineclient.ui.ServerStatusViewModel
-import io.github.daisukikaffuchino.mineclient.ui.navigation.MomoDestination
-import io.github.daisukikaffuchino.mineclient.ui.navigation.MomoScreen
+import io.github.daisukikaffuchino.mineclient.ui.navigation.AppDestination
+import io.github.daisukikaffuchino.mineclient.ui.navigation.AppScreen
 import io.github.daisukikaffuchino.mineclient.ui.navigation.TopLevelBackStack
 import io.github.daisukikaffuchino.mineclient.ui.pages.HomePage
 import io.github.daisukikaffuchino.mineclient.ui.pages.SettingsPage
@@ -183,14 +167,19 @@ fun ServerStatusApp(
         return
     }
 
-    val destinations = MomoDestination.entries
-    val mainBackStack = remember { TopLevelBackStack<MomoScreen>(MomoScreen.Home) }
+    val destinations = AppDestination.entries
+    val mainBackStack = remember { TopLevelBackStack<AppScreen>(AppScreen.Home) }
     val pagerState = rememberPagerState(
         initialPage = destinations.indexOfFirst { it.route == mainBackStack.topLevelKey }
             .coerceAtLeast(0),
         pageCount = { destinations.size },
     )
     val selectedServer = state.servers.firstOrNull { it.id == state.selectedServerId }
+
+    BackHandler(enabled = mainBackStack.topLevelKey != AppScreen.Home) {
+        mainBackStack.removeLast()
+        onPageSelected(mainBackStack.topLevelKey.toAppPage())
+    }
 
     LaunchedEffect(state.selectedPage) {
         val targetScreen = state.selectedPage.toMomoScreen()
@@ -238,18 +227,30 @@ fun ServerStatusApp(
     ) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
-            topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) },
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            topBar = {
+                TopAppBar(
+                title = { Text(stringResource(R.string.app_name)) },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    )
+            )
+                     },
             floatingActionButton = {
                 AnimatedVisibility(
-                    visible = mainBackStack.topLevelKey == MomoScreen.Home,
-                    enter = fadeIn() + scaleIn(),
-                    exit = fadeOut() + scaleOut(),
+                    visible = mainBackStack.topLevelKey == AppScreen.Home,
+                    enter = fadeIn() + scaleIn(initialScale = 0.8f),
+                    exit = fadeOut() + scaleOut(targetScale = 0.8f),
                 ) {
-                    FloatingActionButton(onClick = onAddClick) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_add),
-                            contentDescription = stringResource(R.string.add_server),
-                        )
+                    Box(
+                        modifier = Modifier.padding(8.dp)
+                    ) {
+                        FloatingActionButton(onClick = onAddClick) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_add),
+                                contentDescription = stringResource(R.string.add_server),
+                            )
+                        }
                     }
                 }
             },
@@ -261,13 +262,13 @@ fun ServerStatusApp(
                     .fillMaxSize(),
             ) { pageIndex ->
                 when (destinations[pageIndex].route) {
-                    MomoScreen.Home -> HomePage(
+                    AppScreen.Home -> HomePage(
                         state = state,
                         onAddClick = onAddClick,
                         onServerClick = onServerClick,
                     )
 
-                    MomoScreen.Settings -> SettingsPage(
+                    AppScreen.Settings -> SettingsPage(
                         state = state,
                         onAutoRefreshServersChange = onAutoRefreshServersChange,
                         onLegacyProtocolFallbackChange = onLegacyProtocolFallbackChange,
@@ -302,14 +303,14 @@ fun ServerStatusApp(
     }
 }
 
-private fun AppPage.toMomoScreen(): MomoScreen = when (this) {
-    AppPage.Home -> MomoScreen.Home
-    AppPage.Settings -> MomoScreen.Settings
+private fun AppPage.toMomoScreen(): AppScreen = when (this) {
+    AppPage.Home -> AppScreen.Home
+    AppPage.Settings -> AppScreen.Settings
 }
 
-private fun MomoScreen.toAppPage(): AppPage = when (this) {
-    MomoScreen.Home -> AppPage.Home
-    MomoScreen.Settings -> AppPage.Settings
+private fun AppScreen.toAppPage(): AppPage = when (this) {
+    AppScreen.Home -> AppPage.Home
+    AppScreen.Settings -> AppPage.Settings
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -479,7 +480,23 @@ private fun ErrorDetails(message: String) {
 @Composable
 private fun StatusDetails(status: ServerStatus, isRefreshing: Boolean) {
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Text(status.motd.toAnnotatedString(), style = MaterialTheme.typography.bodyLarge)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.large,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
+            ),
+            border = BorderStroke(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+        ) {
+            Text(
+                text = status.motd.toAnnotatedString(),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             InfoChip(
                 stringResource(R.string.label_latency),
