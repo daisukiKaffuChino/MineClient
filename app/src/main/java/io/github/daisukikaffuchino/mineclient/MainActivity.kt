@@ -13,6 +13,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -94,6 +95,7 @@ import io.github.daisukikaffuchino.mineclient.utils.ServerIcon
 import io.github.daisukikaffuchino.mineclient.utils.latencyColor
 import io.github.daisukikaffuchino.mineclient.utils.shareServer
 import io.github.daisukikaffuchino.mineclient.utils.toSpanStyle
+import io.github.daisukikaffuchino.mineclient.utils.verticalBounce
 
 class MainActivity : ComponentActivity() {
     private val viewModel: ServerStatusViewModel by lazy {
@@ -158,6 +160,7 @@ fun ServerStatusApp(
     onMaxConcurrentRequestsChange: (Int) -> Unit,
     onDismissDetails: () -> Unit,
     modifier: Modifier = Modifier,
+    enableVerticalBounce: Boolean = true
 ) {
     if (!state.isSettingsLoaded) {
         Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {}
@@ -176,6 +179,7 @@ fun ServerStatusApp(
             .coerceAtLeast(0),
         pageCount = { destinations.size },
     )
+    val homeListState = rememberLazyListState()
     val selectedServer = state.servers.firstOrNull { it.id == state.selectedServerId }
 
     BackHandler(enabled = mainBackStack.topLevelKey != AppScreen.Home) {
@@ -240,7 +244,7 @@ fun ServerStatusApp(
             },
             floatingActionButton = {
                 AnimatedVisibility(
-                    visible = mainBackStack.topLevelKey == AppScreen.Home,
+                    visible = mainBackStack.topLevelKey == AppScreen.Home && !homeListState.isScrollInProgress,
                     enter = fadeIn() + scaleIn(initialScale = 0.8f),
                     exit = fadeOut() + scaleOut(targetScale = 0.8f),
                 ) {
@@ -265,25 +269,32 @@ fun ServerStatusApp(
                 }
             },
         ) { innerPadding ->
-            HorizontalPager(
-                state = pagerState,
+            Box(
                 modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize(),
-            ) { pageIndex ->
-                when (destinations[pageIndex].route) {
-                    AppScreen.Home -> HomePage(
-                        state = state,
-                        onServerClick = onServerClick,
-                    )
+                    .fillMaxSize()
+                    .verticalBounce(enabled = enableVerticalBounce)
+            ) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .padding(innerPadding)
+                        .fillMaxSize(),
+                ) { pageIndex ->
+                    when (destinations[pageIndex].route) {
+                        AppScreen.Home -> HomePage(
+                            state = state,
+                            listState = homeListState,
+                            onServerClick = onServerClick,
+                        )
 
-                    AppScreen.Settings -> SettingsPage(
-                        state = state,
-                        onAutoRefreshServersChange = onAutoRefreshServersChange,
-                        onLegacyProtocolFallbackChange = onLegacyProtocolFallbackChange,
-                        onDynamicColorsChange = onDynamicColorsChange,
-                        onMaxConcurrentRequestsChange = onMaxConcurrentRequestsChange,
-                    )
+                        AppScreen.Settings -> SettingsPage(
+                            state = state,
+                            onAutoRefreshServersChange = onAutoRefreshServersChange,
+                            onLegacyProtocolFallbackChange = onLegacyProtocolFallbackChange,
+                            onDynamicColorsChange = onDynamicColorsChange,
+                            onMaxConcurrentRequestsChange = onMaxConcurrentRequestsChange,
+                        )
+                    }
                 }
             }
         }

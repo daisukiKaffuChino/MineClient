@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonShapes
 import androidx.compose.material3.Icon
@@ -42,6 +44,7 @@ import io.github.daisukikaffuchino.mineclient.utils.ShapeUtil.animatedShape
 @Composable
 fun HomePage(
     state: ServerStatusUiState,
+    listState: LazyListState = rememberLazyListState(),
     onServerClick: (Long) -> Unit,
 ) {
     if (state.servers.isEmpty()) {
@@ -50,8 +53,9 @@ fun HomePage(
         )
     } else {
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(state.servers, key = { it.id }) { server ->
