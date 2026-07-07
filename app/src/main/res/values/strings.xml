@@ -22,6 +22,9 @@
     <string name="dns_dialog_title">System DNS servers</string>
     <string name="dns_dialog_empty">Unable to obtain DNS server address</string>
     <string name="action_ok">OK</string>
+    <string name="action_save">Save</string>
+    <string name="action_copy_address">Copy address</string>
+    <string name="edit_server">Edit server</string>
     <string name="empty_title">No servers yet</string>
     <string name="empty_desc">Tap the button in the bottom right to add a server. The list will automatically refresh every 30 seconds.</string>
     <string name="add_server">Add server</string>

@@ -21,6 +21,9 @@
     <string name="dns_dialog_title">系統 DNS 伺服器</string>
     <string name="dns_dialog_empty">無法取得 DNS 伺服器位址</string>
     <string name="action_ok">確定</string>
+    <string name="action_save">儲存</string>
+    <string name="action_copy_address">複製位址</string>
+    <string name="edit_server">編輯伺服器</string>
     <string name="empty_title">尚未有伺服器</string>
     <string name="empty_desc">點擊右下角按鈕新增伺服器，列表會每 30 秒自動重新整理狀態。</string>
     <string name="add_server">新增伺服器</string>

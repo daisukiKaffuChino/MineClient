@@ -11,8 +11,8 @@ android {
         applicationId = "io.github.daisukikaffuchino.mineclient"
         minSdk = 30
         targetSdk = 37
-        versionCode = 260708
-        versionName = "1.0.0"
+        versionCode = 260709
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

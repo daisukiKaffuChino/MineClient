@@ -94,7 +94,7 @@ fun SettingsPage(
                             }
                             Text(
                                 modifier = Modifier.padding(horizontal = 4.dp),
-                                text=state.settings.maxConcurrentRequests.toString(),
+                                text = state.settings.maxConcurrentRequests.toString(),
                                 style = MaterialTheme.typography.titleMedium
                             )
                             OutlinedIconButton(
@@ -166,7 +166,7 @@ fun SettingsPage(
                 )
             }
         }
-        item{
+        item {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()

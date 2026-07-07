@@ -108,6 +108,7 @@ internal class JsonParser(private val source: String) {
                 index += 4
                 code.toChar().toString()
             }
+
             else -> error("Unknown escape character")
         }
     }
@@ -164,6 +165,7 @@ internal fun JsonValue?.toPlainText(): String = when (this) {
         val extras = arrayValue("extra").orEmpty().joinToString(separator = "") { it.toPlainText() }
         ownText + extras
     }
+
     null -> ""
 }
 

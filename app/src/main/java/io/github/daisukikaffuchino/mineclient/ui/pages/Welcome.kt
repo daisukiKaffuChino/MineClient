@@ -45,13 +45,13 @@ fun WelcomePage(onStartClick: () -> Unit, modifier: Modifier = Modifier) {
                     color = MaterialTheme.colorScheme.outlineVariant
                 )
             ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_launcher_foreground),
-                contentDescription = null,
-                modifier = Modifier.size(108.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
+                Icon(
+                    painter = painterResource(R.drawable.ic_launcher_foreground),
+                    contentDescription = null,
+                    modifier = Modifier.size(108.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
             Spacer(modifier = Modifier.size(24.dp))
             Text(
                 text = stringResource(R.string.app_name),

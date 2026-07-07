@@ -21,6 +21,9 @@
     <string name="dns_dialog_title">系统 DNS 服务器</string>
     <string name="dns_dialog_empty">无法获取 DNS 服务器地址</string>
     <string name="action_ok">确定</string>
+    <string name="action_save">保存</string>
+    <string name="action_copy_address">复制地址</string>
+    <string name="edit_server">编辑服务器</string>
     <string name="empty_title">还没有服务器</string>
     <string name="empty_desc">点击右下角按钮添加服务器，列表会自动每 30 秒刷新状态。</string>
     <string name="add_server">添加服务器</string>

@@ -1,6 +1,8 @@
 package io.github.daisukikaffuchino.mineclient.ui.pages
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,12 +42,26 @@ import io.github.daisukikaffuchino.mineclient.utils.ServerIcon
 import io.github.daisukikaffuchino.mineclient.utils.ServerListMeta
 import io.github.daisukikaffuchino.mineclient.utils.ShapeUtil
 import io.github.daisukikaffuchino.mineclient.utils.ShapeUtil.animatedShape
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.nativeClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 
 @Composable
 fun HomePage(
     state: ServerStatusUiState,
     listState: LazyListState = rememberLazyListState(),
     onServerClick: (Long) -> Unit,
+    onEditClick: (Long) -> Unit = {},
 ) {
     if (state.servers.isEmpty()) {
         EmptyServerList(
@@ -63,6 +79,7 @@ fun HomePage(
                     server = server,
                     modifier = Modifier.animateItem(),
                     onClick = { onServerClick(server.id) },
+                    onEditClick = { onEditClick(server.id) },
                 )
             }
         }
@@ -97,53 +114,88 @@ private fun EmptyServerList(modifier: Modifier = Modifier) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ServerListItem(
     server: ServerEntry,
     modifier: Modifier = Modifier,
     background: Color = MaterialTheme.colorScheme.surfaceBright,
-    interactionSource: MutableInteractionSource? = null,
     shapes: ButtonShapes = ShapeUtil.largerShapes(),
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onEditClick: () -> Unit = {},
 ) {
-    val userInteractionSource = interactionSource ?: remember { MutableInteractionSource() }
-    Surface(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-        shape = animatedShape(shapes, userInteractionSource),
-        color = background,
-        interactionSource = userInteractionSource,
-    ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+    Box {
+        val context = LocalContext.current
+        val interactionSource = remember { MutableInteractionSource() }
+        var showMenu by remember { mutableStateOf(false) }
+        Surface(
+            modifier = modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    interactionSource = interactionSource,
+                    onClick = onClick,
+                    onLongClick = { showMenu = true },
+                ),
+            shape = animatedShape(shapes, interactionSource),
+            color = background,
         ) {
-            ServerIcon(server.status?.faviconBase64)
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+            Row(
+                modifier = Modifier.padding(14.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                ServerIcon(server.status?.faviconBase64)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    EditionTag(server.edition)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        EditionTag(server.edition)
+                        Text(
+                            server.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                     Text(
-                        server.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        text = server.queryAddress(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
+                    ServerListMeta(server)
                 }
-                Text(
-                    text = server.queryAddress(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                ServerListMeta(server)
             }
+        }
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.edit_server)) },
+                onClick = {
+                    showMenu = false
+                    onEditClick()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.action_copy_address)) },
+                onClick = {
+                    showMenu = false
+                    val clipboard =
+                        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(
+                        ClipData.newPlainText(
+                            "server_address",
+                            server.queryAddress()
+                        )
+                    )
+                },
+            )
         }
     }
 }

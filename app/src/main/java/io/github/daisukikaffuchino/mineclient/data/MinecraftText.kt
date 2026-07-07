@@ -68,6 +68,7 @@ private class MinecraftTextBuilder {
                     applyCode(char)
                     expectStyleCode = false
                 }
+
                 char == '§' || char == '\u6402' -> expectStyleCode = true
                 else -> append(char)
             }
@@ -168,6 +169,7 @@ private fun appendJsonTextTo(builder: MinecraftTextBuilder, value: JsonValue?) {
             value.arrayValue("extra").orEmpty().forEach { appendJsonTextTo(builder, it) }
             builder.restoreStyle(previousStyle)
         }
+
         null -> Unit
     }
 }

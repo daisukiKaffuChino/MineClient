@@ -42,7 +42,8 @@ data class ServerFormState(
     val edition: ServerEdition = ServerEdition.Java,
 ) {
     val canSubmit: Boolean
-        get() = name.isNotBlank() && address.isNotBlank() && (port.isBlank() || port.toIntOrNull()?.let { it in 1..65535 } == true)
+        get() = name.isNotBlank() && address.isNotBlank() && (port.isBlank() || port.toIntOrNull()
+            ?.let { it in 1..65535 } == true)
 }
 
 enum class AppPage { Home, Settings }
@@ -50,12 +51,15 @@ enum class AppPage { Home, Settings }
 data class ServerStatusUiState(
     val servers: List<ServerEntry> = emptyList(),
     val isAddDialogOpen: Boolean = false,
+    val editingServerId: Long? = null,
     val form: ServerFormState = ServerFormState(),
     val selectedServerId: Long? = null,
     val selectedPage: AppPage = AppPage.Home,
     val isSettingsLoaded: Boolean = false,
     val settings: AppSettings = AppSettings(),
 )
+
+val ServerStatusUiState.isRefreshing: Boolean get() = servers.any { it.isLoading }
 
 class ServerStatusViewModel(
     private val client: MinecraftPingClient = MinecraftPingClient(),
@@ -112,6 +116,44 @@ class ServerStatusViewModel(
 
     fun closeAddDialog() {
         mutableState.update { it.copy(isAddDialogOpen = false, form = ServerFormState()) }
+    }
+
+    fun startEditServer(serverId: Long) {
+        val server = mutableState.value.servers.firstOrNull { it.id == serverId } ?: return
+        mutableState.update {
+            it.copy(
+                editingServerId = serverId, form = ServerFormState(
+                    name = server.name,
+                    address = server.address,
+                    port = server.port?.toString() ?: "",
+                    edition = server.edition
+                )
+            )
+        }
+    }
+
+    fun closeEditDialog() {
+        mutableState.update { it.copy(editingServerId = null, form = ServerFormState()) }
+    }
+
+    fun saveEditedServer() {
+        val form = mutableState.value.form
+        val serverId = mutableState.value.editingServerId ?: return
+        if (!form.canSubmit) return
+        mutableState.update { state ->
+            state.copy(servers = state.servers.map {
+                if (it.id == serverId) {
+                    it.copy(
+                        name = form.name.trim(),
+                        address = form.address.trim(),
+                        port = form.port.toIntOrNull(),
+                        edition = form.edition
+                    )
+                } else it
+            }, editingServerId = null, form = ServerFormState())
+        }
+        persistServers()
+        refreshServer(serverId)
     }
 
     fun updateServerName(value: String) {
@@ -195,7 +237,13 @@ class ServerStatusViewModel(
                             current
                         } else {
                             result.fold(
-                                onSuccess = { current.copy(isLoading = false, status = it, errorMessage = null) },
+                                onSuccess = {
+                                    current.copy(
+                                        isLoading = false,
+                                        status = it,
+                                        errorMessage = null
+                                    )
+                                },
                                 onFailure = {
                                     current.copy(
                                         isLoading = false,
@@ -209,6 +257,7 @@ class ServerStatusViewModel(
             }
         }
     }
+
     fun selectServer(serverId: Long) {
         mutableState.update { it.copy(selectedServerId = serverId) }
     }
@@ -266,8 +315,6 @@ fun ServerEntry.queryAddress(): String {
     }
     return if (port == null || port == defaultPort) address else "$address:$port"
 }
-
-
 
 
 

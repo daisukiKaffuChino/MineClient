@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -31,6 +32,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -83,6 +85,7 @@ import io.github.daisukikaffuchino.mineclient.ui.ServerEntry
 import io.github.daisukikaffuchino.mineclient.ui.ServerFormState
 import io.github.daisukikaffuchino.mineclient.ui.ServerStatusUiState
 import io.github.daisukikaffuchino.mineclient.ui.ServerStatusViewModel
+import io.github.daisukikaffuchino.mineclient.ui.isRefreshing
 import io.github.daisukikaffuchino.mineclient.ui.navigation.AppDestination
 import io.github.daisukikaffuchino.mineclient.ui.navigation.AppScreen
 import io.github.daisukikaffuchino.mineclient.ui.navigation.TopLevelBackStack
@@ -124,6 +127,7 @@ class MainActivity : ComponentActivity() {
                     onEditionChange = viewModel::updateServerEdition,
                     onSubmitServer = viewModel::addServer,
                     onServerClick = viewModel::selectServer,
+                    onEditClick = viewModel::startEditServer,
                     onDeleteServer = viewModel::deleteServer,
                     onPageSelected = viewModel::selectPage,
                     onWelcomeDone = viewModel::completeWelcome,
@@ -132,6 +136,8 @@ class MainActivity : ComponentActivity() {
                     onDynamicColorsChange = viewModel::updateDynamicColorsEnabled,
                     onMaxConcurrentRequestsChange = viewModel::updateMaxConcurrentRequests,
                     onDismissDetails = viewModel::clearSelectedServer,
+                    onDismissEditDialog = viewModel::closeEditDialog,
+                    onSaveEditedServer = viewModel::saveEditedServer,
                 )
             }
         }
@@ -142,6 +148,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ServerStatusApp(
+    modifier: Modifier = Modifier,
     state: ServerStatusUiState,
     onAddClick: () -> Unit,
     onDismissAddDialog: () -> Unit,
@@ -151,6 +158,7 @@ fun ServerStatusApp(
     onEditionChange: (ServerEdition) -> Unit,
     onSubmitServer: () -> Unit,
     onServerClick: (Long) -> Unit,
+    onEditClick: (Long) -> Unit = {},
     onDeleteServer: (Long) -> Unit,
     onPageSelected: (AppPage) -> Unit,
     onWelcomeDone: () -> Unit,
@@ -159,7 +167,8 @@ fun ServerStatusApp(
     onDynamicColorsChange: (Boolean) -> Unit,
     onMaxConcurrentRequestsChange: (Int) -> Unit,
     onDismissDetails: () -> Unit,
-    modifier: Modifier = Modifier,
+    onDismissEditDialog: () -> Unit = {},
+    onSaveEditedServer: () -> Unit = {},
     enableVerticalBounce: Boolean = true
 ) {
     if (!state.isSettingsLoaded) {
@@ -167,40 +176,40 @@ fun ServerStatusApp(
         return
     }
 
-        val destinations = AppDestination.entries
-        val mainBackStack = remember { TopLevelBackStack<AppScreen>(AppScreen.Home) }
-        val pagerState = rememberPagerState(
-            initialPage = destinations.indexOfFirst { it.route == mainBackStack.topLevelKey }
-                .coerceAtLeast(0),
-            pageCount = { destinations.size },
-        )
-        val homeListState = rememberLazyListState()
-        val selectedServer = state.servers.firstOrNull { it.id == state.selectedServerId }
+    val destinations = AppDestination.entries
+    val mainBackStack = remember { TopLevelBackStack<AppScreen>(AppScreen.Home) }
+    val pagerState = rememberPagerState(
+        initialPage = destinations.indexOfFirst { it.route == mainBackStack.topLevelKey }
+            .coerceAtLeast(0),
+        pageCount = { destinations.size },
+    )
+    val homeListState = rememberLazyListState()
+    val selectedServer = state.servers.firstOrNull { it.id == state.selectedServerId }
 
-        BackHandler(enabled = mainBackStack.topLevelKey != AppScreen.Home) {
-            mainBackStack.removeLast()
-            onPageSelected(mainBackStack.topLevelKey.toAppPage())
-        }
+    BackHandler(enabled = mainBackStack.topLevelKey != AppScreen.Home) {
+        mainBackStack.removeLast()
+        onPageSelected(mainBackStack.topLevelKey.toAppPage())
+    }
 
-        LaunchedEffect(state.selectedPage) {
-            val targetScreen = state.selectedPage.toMomoScreen()
-            if (mainBackStack.topLevelKey != targetScreen) {
-                mainBackStack.addTopLevel(targetScreen)
-            }
+    LaunchedEffect(state.selectedPage) {
+        val targetScreen = state.selectedPage.toMomoScreen()
+        if (mainBackStack.topLevelKey != targetScreen) {
+            mainBackStack.addTopLevel(targetScreen)
         }
-        LaunchedEffect(mainBackStack.topLevelKey) {
-            val targetPage = destinations.indexOfFirst { it.route == mainBackStack.topLevelKey }
-            if (targetPage >= 0 && pagerState.currentPage != targetPage) {
-                pagerState.animateScrollToPage(targetPage)
-            }
-            onPageSelected(mainBackStack.topLevelKey.toAppPage())
+    }
+    LaunchedEffect(mainBackStack.topLevelKey) {
+        val targetPage = destinations.indexOfFirst { it.route == mainBackStack.topLevelKey }
+        if (targetPage >= 0 && pagerState.currentPage != targetPage) {
+            pagerState.animateScrollToPage(targetPage)
         }
-        LaunchedEffect(pagerState.currentPage) {
-            val destination = destinations.getOrNull(pagerState.currentPage) ?: return@LaunchedEffect
-            if (mainBackStack.topLevelKey != destination.route) {
-                mainBackStack.addTopLevel(destination.route)
-            }
+        onPageSelected(mainBackStack.topLevelKey.toAppPage())
+    }
+    LaunchedEffect(pagerState.currentPage) {
+        val destination = destinations.getOrNull(pagerState.currentPage) ?: return@LaunchedEffect
+        if (mainBackStack.topLevelKey != destination.route) {
+            mainBackStack.addTopLevel(destination.route)
         }
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         NavigationSuiteScaffold(
@@ -233,6 +242,20 @@ fun ServerStatusApp(
                 topBar = {
                     TopAppBar(
                         title = { Text(stringResource(R.string.app_name)) },
+                        actions = {
+                            AnimatedVisibility(
+                                visible = state.isRefreshing,
+                                enter = fadeIn(),
+                                exit = fadeOut(),
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier
+                                        .padding(end = 12.dp)
+                                        .size(24.dp),
+                                    strokeWidth = 3.dp,
+                                )
+                            }
+                        },
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainer,
                         )
@@ -281,6 +304,7 @@ fun ServerStatusApp(
                                 state = state,
                                 listState = homeListState,
                                 onServerClick = onServerClick,
+                                onEditClick = onEditClick,
                             )
 
                             AppScreen.Settings -> SettingsPage(
@@ -315,6 +339,19 @@ fun ServerStatusApp(
         )
     }
 
+    if (state.editingServerId != null) {
+        AddServerDialog(
+            form = state.form,
+            isEditing = true,
+            onNameChange = onNameChange,
+            onAddressChange = onAddressChange,
+            onPortChange = onPortChange,
+            onEditionChange = onEditionChange,
+            onDismiss = onDismissEditDialog,
+            onSubmit = onSaveEditedServer,
+        )
+    }
+
     if (selectedServer != null) {
         ModalBottomSheet(onDismissRequest = onDismissDetails) {
             ServerDetailsSheet(
@@ -342,6 +379,7 @@ private fun AppScreen.toAppPage(): AppPage = when (this) {
 @Composable
 private fun AddServerDialog(
     form: ServerFormState,
+    isEditing: Boolean = false,
     onNameChange: (String) -> Unit,
     onAddressChange: (String) -> Unit,
     onPortChange: (String) -> Unit,
@@ -352,7 +390,7 @@ private fun AddServerDialog(
     var isEditionExpanded by remember { mutableStateOf(false) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.add_server)) },
+        title = { Text(stringResource(if (isEditing) R.string.edit_server else R.string.add_server)) },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -423,7 +461,7 @@ private fun AddServerDialog(
             Button(
                 onClick = onSubmit,
                 enabled = form.canSubmit
-            ) { Text(stringResource(R.string.action_add)) }
+            ) { Text(stringResource(if (isEditing) R.string.action_save else R.string.action_add)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
@@ -652,6 +690,9 @@ fun ServerStatusPreview() {
             onDynamicColorsChange = {},
             onMaxConcurrentRequestsChange = {},
             onDismissDetails = {},
+            onEditClick = {},
+            onDismissEditDialog = {},
+            onSaveEditedServer = {},
         )
     }
 }
